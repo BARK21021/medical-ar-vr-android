@@ -20,14 +20,25 @@ jobs:
         run: |
           pip install buildozer cython
           sudo apt-get update -qq
-          sudo apt-get install -y -qq openjdk-17-jdk-headless zlib1g-dev libncurses5-dev libncursesw5-dev libbz2-dev libsqlite3-dev libffi-dev autoconf automake libtool pkg-config libltdl-dev
+          sudo apt-get install -y -qq openjdk-17-jdk-headless zlib1g-dev libncurses5-dev libncursesw5-dev libbz2-dev libsqlite3-dev libffi-dev autoconf automake libtool pkg-config libltdl-dev unzip
+      
+      - name: Prepare Android SDK licenses
+        run: |
+          mkdir -p ~/.android
+          touch ~/.android/repositories.cfg
+          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > ~/.android/debug.keystore
+          echo "y" | sudo $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
+          echo "y" | sudo $ANDROID_HOME/tools/bin/sdkmanager --licenses 2>/dev/null || true
       
       - name: Build APK
         run: |
           export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-          buildozer android debug
+          export ANDROID_HOME=/home/runner/.buildozer/android/platform/android-sdk
+          export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
+          yes | buildozer android debug 2>&1 | tee build_log.txt
       
       - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: medical-ar-vr-apk
