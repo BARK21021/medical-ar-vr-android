@@ -48,13 +48,22 @@ jobs:
           fi
           yes | "$SDKMANAGER" --licenses > /dev/null
           yes | "$SDKMANAGER" --install "platform-tools" "platforms;android-33" "build-tools;34.0.0" "build-tools;37.0.0"
+          mkdir -p "$ANDROID_SDK_ROOT/tools/bin"
+          ln -sf "$SDKMANAGER" "$ANDROID_SDK_ROOT/tools/bin/sdkmanager"
+          AVDMANAGER="$(dirname "$SDKMANAGER")/avdmanager"
+          if [ -x "$AVDMANAGER" ]; then
+            ln -sf "$AVDMANAGER" "$ANDROID_SDK_ROOT/tools/bin/avdmanager"
+          fi
           echo "$ANDROID_SDK_ROOT/platform-tools" >> "$GITHUB_PATH"
           echo "$ANDROID_SDK_ROOT/build-tools/37.0.0" >> "$GITHUB_PATH"
           echo "$ANDROID_SDK_ROOT/build-tools/34.0.0" >> "$GITHUB_PATH"
+          ls -R "$ANDROID_SDK_ROOT/cmdline-tools" || true
+          ls -R "$ANDROID_SDK_ROOT/tools" || true
           ls -R "$ANDROID_SDK_ROOT/build-tools" || true
 
       - name: Build APK
         run: |
+          set -o pipefail
           buildozer -v android debug 2>&1 | tee build_log.txt
 
       - name: Locate APK
@@ -72,11 +81,17 @@ jobs:
           echo "APK_PATH=$APK_PATH" >> "$GITHUB_ENV"
           echo "Resolved APK path: $APK_PATH"
 
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: medical-ar-vr-build-log
+          path: build_log.txt
+          if-no-files-found: ignore
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: medical-ar-vr-apk
-          path: |
-            ${{ env.APK_PATH }}
-            build_log.txt
+          path: ${{ env.APK_PATH }}
           if-no-files-found: error
