@@ -34,7 +34,6 @@ jobs:
           export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
           export ANDROID_HOME=/home/runner/.buildozer/android/platform/android-sdk
           export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
-          buildozer android clean
           buildozer android debug 2>&1 | tee build_log.txt
 
       - name: Locate APK
