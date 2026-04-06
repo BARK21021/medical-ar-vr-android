@@ -61,7 +61,10 @@ jobs:
         run: |
           echo "Searching for APK outputs..."
           find . -type f -name "*.apk" | sort || true
-          APK_PATH=$(find . -type f -name "*.apk" ! -path "*/.buildozer/*" | head -n 1)
+          APK_PATH=$(find ./bin -maxdepth 1 -type f -name "*.apk" | head -n 1)
+          if [ -z "$APK_PATH" ]; then
+            APK_PATH=$(find . -type f -name "*.apk" | head -n 1)
+          fi
           if [ -z "$APK_PATH" ]; then
             echo "APK not found after build"
             exit 1
