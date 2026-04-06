@@ -14,7 +14,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.10'
       
       - name: Install dependencies
         run: |
@@ -26,7 +26,6 @@ jobs:
         run: |
           mkdir -p ~/.android
           touch ~/.android/repositories.cfg
-          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > ~/.android/debug.keystore
           echo "y" | sudo $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
           echo "y" | sudo $ANDROID_HOME/tools/bin/sdkmanager --licenses 2>/dev/null || true
       
@@ -35,7 +34,7 @@ jobs:
           export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
           export ANDROID_HOME=/home/runner/.buildozer/android/platform/android-sdk
           export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
-          yes | buildozer android debug 2>&1 | tee build_log.txt
+          buildozer android debug 2>&1 | tee build_log.txt
       
       - name: Upload APK
         if: success()
