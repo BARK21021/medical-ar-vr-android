@@ -8,6 +8,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /home/runner/.buildozer/android/platform/android-sdk
+      ANDROID_SDK_ROOT: /home/runner/.buildozer/android/platform/android-sdk
+      APP_ANDROID_SDK_PATH: /home/runner/.buildozer/android/platform/android-sdk
     steps:
       - uses: actions/checkout@v4
 
@@ -16,25 +20,33 @@ jobs:
         with:
           python-version: '3.10'
 
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: ''
+
       - name: Install dependencies
         run: |
-          pip install buildozer cython
+          pip install buildozer "cython<3.0" virtualenv
           sudo apt-get update -qq
-          sudo apt-get install -y -qq openjdk-17-jdk-headless zlib1g-dev libncurses5-dev libncursesw5-dev libbz2-dev libsqlite3-dev libffi-dev autoconf automake libtool pkg-config libltdl-dev unzip
+          sudo apt-get install -y -qq openjdk-17-jdk-headless zlib1g-dev libncurses5-dev libncursesw5-dev libbz2-dev libsqlite3-dev libffi-dev autoconf automake libtool pkg-config libltdl-dev unzip libtinfo5 zip
 
-      - name: Prepare Android SDK licenses
+      - name: Prepare Android SDK
         run: |
           mkdir -p ~/.android
           touch ~/.android/repositories.cfg
-          echo "y" | sudo $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
-          echo "y" | sudo $ANDROID_HOME/tools/bin/sdkmanager --licenses 2>/dev/null || true
+          yes | sdkmanager --licenses
+          sdkmanager "platform-tools" "platforms;android-33" "build-tools;34.0.0"
 
       - name: Build APK
         run: |
-          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-          export ANDROID_HOME=/home/runner/.buildozer/android/platform/android-sdk
-          export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
-          buildozer android debug 2>&1 | tee build_log.txt
+          buildozer -v android debug 2>&1 | tee build_log.txt
 
       - name: Locate APK
         run: |
@@ -52,5 +64,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: medical-ar-vr-apk
-          path: ${{ env.APK_PATH }}
+          path: |
+            ${{ env.APK_PATH }}
+            build_log.txt
           if-no-files-found: error
