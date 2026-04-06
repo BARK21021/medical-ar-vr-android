@@ -10,35 +10,48 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-      
+
       - name: Install dependencies
         run: |
           pip install buildozer cython
           sudo apt-get update -qq
           sudo apt-get install -y -qq openjdk-17-jdk-headless zlib1g-dev libncurses5-dev libncursesw5-dev libbz2-dev libsqlite3-dev libffi-dev autoconf automake libtool pkg-config libltdl-dev unzip
-      
+
       - name: Prepare Android SDK licenses
         run: |
           mkdir -p ~/.android
           touch ~/.android/repositories.cfg
           echo "y" | sudo $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
           echo "y" | sudo $ANDROID_HOME/tools/bin/sdkmanager --licenses 2>/dev/null || true
-      
+
       - name: Build APK
         run: |
           export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
           export ANDROID_HOME=/home/runner/.buildozer/android/platform/android-sdk
           export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
+          buildozer android clean
           buildozer android debug 2>&1 | tee build_log.txt
-      
+
+      - name: Locate APK
+        run: |
+          echo "Searching for APK outputs..."
+          find . -type f -name "*.apk" | sort || true
+          APK_PATH=$(find . -type f -name "*.apk" ! -path "*/.buildozer/*" | head -n 1)
+          if [ -z "$APK_PATH" ]; then
+            echo "APK not found after build"
+            exit 1
+          fi
+          echo "APK_PATH=$APK_PATH" >> "$GITHUB_ENV"
+          echo "Resolved APK path: $APK_PATH"
+
       - name: Upload APK
-        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: medical-ar-vr-apk
-          path: bin/*.apk
+          path: ${{ env.APK_PATH }}
+          if-no-files-found: error
