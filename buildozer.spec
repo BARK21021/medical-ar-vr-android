@@ -15,10 +15,12 @@ android.api = 33
 android.minapi = 24
 android.archs = arm64-v8a
 
-android.permissions = INTERNET
+android.permissions = INTERNET,WAKE_LOCK
 android.allow_backup = False
 android.theme = "@android:style/Theme.NoTitleBar"
 android.add_assets = assets/source
+android.wakelock = True
+android.release_artifact = apk
 
 [buildozer]
 
