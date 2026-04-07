@@ -16,7 +16,7 @@ android.minapi = 24
 android.archs = arm64-v8a
 
 android.permissions = INTERNET
-android.allow_backup = True
+android.allow_backup = False
 android.theme = "@android:style/Theme.NoTitleBar"
 android.add_assets = assets/source
 
