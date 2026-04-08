@@ -1,4 +1,4 @@
-    # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 import gc
 import hashlib
 import os
@@ -8,6 +8,7 @@ from datetime import datetime
 
 from kivy.app import App
 from kivy.clock import Clock
+from kivy.core.text import LabelBase, DEFAULT_FONT
 from kivy.core.window import Window
 from kivy.lang import Builder
 from kivy.logger import Logger
@@ -47,8 +48,8 @@ WARN_COLOR = (0.95, 0.45, 0.45, 1)
 
 FONT_SCALE_PRESETS = {
     "font_scale_1.0": {"font": 1.0, "layout": 0.96, "media": 0.94},
-    "font_scale_1.15": {"font": 1.15, "layout": 1.0, "media": 1.0},
-    "font_scale_1.3": {"font": 1.3, "layout": 1.08, "media": 1.08},
+    "font_scale_1.15": {"font": 1.1, "layout": 1.0, "media": 1.0},
+    "font_scale_1.3": {"font": 1.2, "layout": 1.05, "media": 1.05},
 }
 
 IMAGE_MAX_EDGE = {
@@ -465,7 +466,7 @@ class SegmentCard(SurfaceBox):
         self.height = ui_dp(214)
         self.surface_color = CARD_ALT_COLOR
 
-        self.top = BoxLayout(size_hint_y=None, height=ui_dp(30))
+        self.top_box = BoxLayout(size_hint_y=None, height=ui_dp(30))
         badge_text = "交互题" if segment_data.get("has_question") else "知识片段"
         badge_color = ACCENT_COLOR if segment_data.get("has_question") else SUCCESS_COLOR
         self.segment_title = Label(
@@ -488,9 +489,9 @@ class SegmentCard(SurfaceBox):
             valign="middle",
         )
         self.badge.bind(width=lambda inst, value: setattr(inst, "text_size", (value, None)))
-        self.top.add_widget(self.segment_title)
-        self.top.add_widget(self.badge)
-        self.add_widget(self.top)
+        self.top_box.add_widget(self.segment_title)
+        self.top_box.add_widget(self.badge)
+        self.add_widget(self.top_box)
 
         text = segment_data.get("question") or segment_data.get("description", "继续学习本片段内容。")
         self.summary = Label(
@@ -527,12 +528,12 @@ class SegmentCard(SurfaceBox):
         content_width = max(self.width - self._outer_padding * 2, ui_dp(220))
         self.badge.width = clamp(content_width * 0.22, ui_dp(74), ui_dp(92))
         self.segment_title.text_size = (max(content_width - self.badge.width - self._gap, ui_dp(110)), None)
-        self.top.height = max(self.segment_title.height, self.badge.texture_size[1], ui_dp(28))
+        self.top_box.height = max(self.segment_title.height, self.badge.texture_size[1], ui_dp(28))
         self.summary.text_size = (content_width, None)
         preview_height = clamp(content_width * 0.34, ui_dp(84, "media"), ui_dp(146, "media"))
         self.preview.height = preview_height
         self.height = max(
-            self._outer_padding * 2 + self.top.height + self.summary.height + preview_height + self.action_btn.height + self.spacing * 3,
+            self._outer_padding * 2 + self.top_box.height + self.summary.height + preview_height + self.action_btn.height + self.spacing * 3,
             ui_dp(188),
         )
 
@@ -1112,6 +1113,12 @@ class CourseScreen(Screen):
 class MedicalTutorialAndroidApp(App):
     def build(self):
         install_runtime_exception_hook()
+        
+        # 注册中文字体为全局默认字体
+        font_path = os.path.join(os.path.dirname(__file__), "assets", "font", "simhei.ttf")
+        if os.path.exists(font_path):
+            LabelBase.register(DEFAULT_FONT, font_path)
+            
         Window.clearcolor = BG_COLOR
         Window.softinput_mode = "below_target"
         self.data_manager = VideoDataManager()
