@@ -1,0 +1,4 @@
+# 医学AR+VR学术教程系统 - Windows版本依赖
+PyQt5>=5.15.0
+opencv-python>=4.5.0
+numpy>=1.20.0
