@@ -8,17 +8,16 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
-    env:
-      ANDROID_HOME: /home/runner/.buildozer/android/platform/android-sdk
-      ANDROID_SDK_ROOT: /home/runner/.buildozer/android/platform/android-sdk
-      APP_ANDROID_SDK_PATH: /home/runner/.buildozer/android/platform/android-sdk
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          python-version: '3.10'
+          node-version: '20'
+
+      - name: Install pnpm
+        run: npm install -g pnpm
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -26,68 +25,29 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v4
-        with:
-          packages: ''
-          accept-android-sdk-licenses: false
-
       - name: Install dependencies
-        run: |
-          pip install buildozer "cython<3.0" virtualenv
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq openjdk-17-jdk-headless zlib1g-dev libncurses5-dev libncursesw5-dev libbz2-dev libsqlite3-dev libffi-dev autoconf automake libtool pkg-config libltdl-dev unzip libtinfo5 zip
+        run: pnpm install
 
-      - name: Prepare Android SDK
-        run: |
-          mkdir -p ~/.android
-          touch ~/.android/repositories.cfg
-          SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
-          if [ ! -x "$SDKMANAGER" ]; then
-            SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/20.0/bin/sdkmanager"
-          fi
-          yes | "$SDKMANAGER" --licenses > /dev/null
-          yes | "$SDKMANAGER" --install "platform-tools" "platforms;android-33" "build-tools;34.0.0" "build-tools;37.0.0"
-          mkdir -p "$ANDROID_SDK_ROOT/tools/bin"
-          ln -sf "$SDKMANAGER" "$ANDROID_SDK_ROOT/tools/bin/sdkmanager"
-          AVDMANAGER="$(dirname "$SDKMANAGER")/avdmanager"
-          if [ -x "$AVDMANAGER" ]; then
-            ln -sf "$AVDMANAGER" "$ANDROID_SDK_ROOT/tools/bin/avdmanager"
-          fi
-          echo "$ANDROID_SDK_ROOT/platform-tools" >> "$GITHUB_PATH"
-          echo "$ANDROID_SDK_ROOT/build-tools/37.0.0" >> "$GITHUB_PATH"
-          echo "$ANDROID_SDK_ROOT/build-tools/34.0.0" >> "$GITHUB_PATH"
-          ls -R "$ANDROID_SDK_ROOT/cmdline-tools" || true
-          ls -R "$ANDROID_SDK_ROOT/tools" || true
-          ls -R "$ANDROID_SDK_ROOT/build-tools" || true
+      - name: Build Web App
+        run: pnpm run build
+
+      - name: Sync Capacitor
+        run: npx cap sync android
 
       - name: Build APK
         run: |
-          set -o pipefail
-          buildozer -v android debug 2>&1 | tee build_log.txt
+          cd android
+          ./gradlew assembleDebug
 
       - name: Locate APK
         run: |
-          echo "Searching for APK outputs..."
-          find . -type f -name "*.apk" | sort || true
-          APK_PATH=$(find ./bin -maxdepth 1 -type f -name "*.apk" | head -n 1)
-          if [ -z "$APK_PATH" ]; then
-            APK_PATH=$(find . -type f -name "*.apk" | head -n 1)
-          fi
+          APK_PATH=$(find android/app/build/outputs/apk/debug -name "*.apk" | head -n 1)
           if [ -z "$APK_PATH" ]; then
             echo "APK not found after build"
             exit 1
           fi
           echo "APK_PATH=$APK_PATH" >> "$GITHUB_ENV"
           echo "Resolved APK path: $APK_PATH"
-
-      - name: Upload build log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: medical-ar-vr-build-log
-          path: build_log.txt
-          if-no-files-found: ignore
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
