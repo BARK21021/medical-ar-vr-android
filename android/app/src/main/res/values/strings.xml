@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">medical-tutorial</string>
+    <string name="title_activity_main">medical-tutorial</string>
+    <string name="package_name">com.medical.tutorial</string>
+    <string name="custom_url_scheme">com.medical.tutorial</string>
+</resources>
